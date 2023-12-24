@@ -20,6 +20,10 @@ handle_call(_Request, _From, State) ->
 
 handle_cast(start, State) ->
     timer:sleep(1000),
+    {ok, {_,_,Ip}} = httpc:request(get, {"http://api.ipify.org", []}, [], []),
+    NodeName = string:concat("player@", Ip),
+    net_kernel:start([list_to_atom(NodeName), longnames]),
+    timer:sleep(1000),
     io:format("~nDobrodosli u erlang-blackjack, upisite svoje ime: ~n"),
     Name = io:get_line(""),
     FormattedName = string:trim(Name),
