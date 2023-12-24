@@ -3,6 +3,8 @@ Blackjack
 
 Distributed Erlang OTP application
 
+**Za svaku izmjenu koda napravite novu granu pa nju pushajte na github**
+
 Setup
 =====
 
@@ -20,7 +22,7 @@ Isprobavanje koda
 =====
 appname je player ili dealer
 
-    (putanja-do-Blackjack-direktorija)> rebar3 release -n appname
+    (putanja-do-appname-direktorija)> rebar3 release
 
 **Odi na _build/default/rel/player/bin i otvori (appname).cmd i promijeni 51. liniju tako da obrises w da ostane set werl="%bindir%\erl.exe"**
 
@@ -32,7 +34,7 @@ Ovo radimo jer nam rebar3 builda release za nas operacijski sustav i zato zeli p
 Prvo pokretanje:
 otvoriti shell kao administrator
 
-    (putanja-do-Blackjack-direktorija)> cd .\_build\default\rel\player\bin
+    (putanja-do-Blackjack-direktorija)> cd .\_build\default\rel\appname\bin
 
     ...\bin> (appname).cmd install
     ...\bin> (appname).cmd start
@@ -41,13 +43,10 @@ otvoriti shell kao administrator
 Ostala pokretanja:
 bilo kako otvoriti shell
 
-    (putanja-do-Blackjack-direktorija)> cd .\_build\default\rel\player\bin
+    (putanja-do-Blackjack-direktorija)> cd .\_build\default\rel\appname\bin
     
     ...\bin> (appname).cmd console
 
 Otvorit ce se erlang shell i pokrenut (appname)_app.erl koji ce pokrenut (appname).erl koji radi kao gen_server
 
-**Ne mozes imat otvorena oba shella za playera i dealera**
-
 Zasad sam dodao upisivanje imena da vidim kako funkcionira input od korisnika i funkciju primjer koja se moze pokrenut iz shella. Dok se ne napravi spajanje izmedu playera i dealera testiraj kod da zoves funkcije iz shella na taj nacin.
-
