@@ -32,13 +32,13 @@ appname je player ili dealer
 Ovo radimo jer nam rebar3 builda release za nas operacijski sustav i zato zeli pokrenut werl ali input/output funkcije ne rade kako treba sa werl-om pa cemo koristiti defaultni erlang shell.
 
 Prvo pokretanje:
-otvoriti shell kao administrator
+**otvoriti shell kao administrator**
 
     (putanja-do-Blackjack-direktorija)> cd .\_build\default\rel\appname\bin
 
-    ...\bin> (appname).cmd install
-    ...\bin> (appname).cmd start
-    ...\bin> (appname).cmd console
+    ...\bin> ./(appname).cmd install
+    ...\bin> ./(appname).cmd start
+    ...\bin> ./(appname).cmd console
 
 Ostala pokretanja:
 bilo kako otvoriti shell

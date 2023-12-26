@@ -42,4 +42,5 @@ code_change(_OldVsn, State, _Extra) ->
 
 % poziva se u shellu sa dealer:primjer(Msg).
 primjer(Msg) ->
+    gen_server:cast(dealer, Msg),
     io:format("Primjer poruka: ~p", [Msg]).
