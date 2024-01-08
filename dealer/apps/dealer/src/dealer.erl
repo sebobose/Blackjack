@@ -5,7 +5,7 @@
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
         terminate/2, code_change/3]).
--export([primjer/1]).
+-export([poruka/1,message_all/1]).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -20,10 +20,7 @@ handle_call(_Request, _From, State) ->
 
 handle_cast(start, State) ->
     timer:sleep(1000),
-    io:format("~nDobrodosli u erlang-blackjack, upisite svoje ime: ~n"),
-    Name = io:get_line(""),
-    FormattedName = string:trim(Name),
-    io:format("Dobrodosli ~p!~n", [FormattedName]),
+    io:format("~nDobrodosli u erlang-blackjack, vi dijelite karte! ~n"),
     {noreply, State};
 
 handle_cast(Msg, State) ->
@@ -40,7 +37,12 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-% poziva se u shellu sa dealer:primjer(Msg).
-primjer(Msg) ->
+% poziva se u dealer shellu sa dealer:primjer(Msg).
+poruka(Msg) ->
+    % ova cast funkcija asinkrono poziva funkciju na 26. liniji
     gen_server:cast(dealer, Msg),
-    io:format("Primjer poruka: ~p", [Msg]).
+    string:concat("Primjer poruka: ", Msg).
+
+%Funkcija message_all/1 koristi se za slanje poruke svim igračima (player nodes) u sustavu. Evo kako to funkcionira: Prima jedan argument Msg, koji je poruka koju želite poslati svim igračima. Koristi rpc:multicall/4 za istodobno slanje poruke svim vidljivim čvorovima (nodes). nodes() je funkcija koja vraća listu svih vidljivih čvorova. player je modul na kojem želite pozvati funkciju. primjer je funkcija koju želite pozvati na svakom čvoru. [Msg] je lista argumenata koju želite proslijediti funkciji primjer/1. Dakle, message_all(Msg) će pozvati player:primjer(Msg) na svakom vidljivom čvoru u sustavu.
+message_all(Msg)->
+    rpc:multicall(nodes(), player,poruka,[Msg]).
