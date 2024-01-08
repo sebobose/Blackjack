@@ -10,7 +10,6 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
-    net_adm:ping(dealer@localhost),
     player:start_link().
 
 stop(_State) ->
