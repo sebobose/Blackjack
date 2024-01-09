@@ -7,19 +7,20 @@
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-        terminate/2, code_change/3]).
--export([primjer/1, generate_cards/0, number_of_cards/1, game_simulator/0, remove_card/2, pick_card/1]).
+    terminate/2, code_change/3]).
+-export([primjer/1, generate_cards/0, number_of_cards/1, game_simulator/0, remove_card/2, pick_card/1, request_card/0]).
+
+-record(player_hand, {bet = 0, sum = 0}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-    gen_server:cast(dealer, start),
+    InitialState = #player_hand{},
+    gen_server:cast(dealer, start, InitialState),
     {ok, []}.
 
-handle_call(_Request, _From, State) ->
-    Reply = ok,
-    {reply, Reply, State}.
+
 
 handle_cast(start, State) ->
     timer:sleep(1000),
@@ -119,5 +120,36 @@ game_simulator() ->
     ; CardValue2 < 21 -> io:format("~n --- Provjere --- ~n")
     ; CardValue2 >= 21 -> io:format("~n --- Dealer bust --- ~n")
     end.
+
+handle_call({draw_card_request}, _From, State) ->
+    Cards = generate_cards(),
+    io:format("Broj karata u spilu: ~p~n", [number_of_cards(Cards)]),
+    io:format("~n --- Player vuce kartu --- ~n"),
+    Card = pick_card(Cards),
+    %NewCards = remove_card(Card, Cards), ---> ovo sredi u pravom spilu
+    io:format("Izvucena je karta: ~p~n", [Card]),
+    CardValue = card_value(Card),
+    NewSum = State#player_hand.sum + CardValue,
+    NewState = State#player_hand{sum = NewSum},
+    {reply, Card, NewState};
+
+handle_call(_Request, _From, State) ->
+    Reply = ok,
+    {reply, Reply, State}.
+
+% funkcija gdje player trazi kartu od dealera
+% prvo se poziva gen_server:call
+% handle_call
+% funkcija vraca novce playeru, 0 ili dobitak
+request_card() ->
+    NewState = gen_server:call(?MODULE, {draw_card_request}),
+    Sum = NewState#player_hand.sum,
+    Bet = NewState#player_hand.bet,
+    if
+        Sum > 21 -> 0;
+        Sum == 21 -> 1.5 * Bet
+    end.
+
+
 
 
