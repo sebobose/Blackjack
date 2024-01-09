@@ -15,5 +15,7 @@ logs
 _build
 .idea
 *.iml
+*.metadata
+*.DS_Store
 rebar3.crashdump
 *~
