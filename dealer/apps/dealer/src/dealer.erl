@@ -3,32 +3,27 @@
 -behaviour(gen_server).
 
 -import(string, [concat/2, sub_string/3]).
--import(lists, [nth/2, find_index/2]).
+-import(lists, [nth/2, find_index/2, delete/2]).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
     terminate/2, code_change/3]).
--export([primjer/1, generate_cards/0, number_of_cards/1, game_simulator/0, remove_card/2, pick_card/1, request_card/0]).
+-export([primjer/1, generate_cards/0, number_of_cards/1, pick_card/1, request_card/0]).
 
--record(player_hand, {bet = 0, sum = 0}).
+% my_hand -> zbroj karata u dealerovoj ruci
+% deck -> spil karata
+% player_hands -> zbroj karata u ruci svakog igraca
+% num_players -> broj igraca koji ujedno sluzi i kao id
+% -> pri svakom spajanju igraca, igrac dobije trenutni broj igraca kao svoj ID i broj igraca se poveca za jedan
+-record(game_info, {my_hand = 0.0, deck = generate_cards()}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-    InitialState = #player_hand{},
-    gen_server:cast(dealer, start, InitialState),
-    {ok, []}.
-
-
-
-handle_cast(start, State) ->
-    timer:sleep(1000),
-    io:format("~nDobrodosli u erlang-blackjack, upisite svoje ime: ~n"),
-    Name = io:get_line(""),
-    FormattedName = string:trim(Name),
-    io:format("Dobrodosli ~p!~n", [FormattedName]),
-    {noreply, State};
+    Deck = generate_cards(),
+    InitialState = #game_info{deck = Deck},
+    {ok, InitialState}.
 
 handle_cast(Msg, State) ->
     io:format("dealer cast: ~p~n", [Msg]),
@@ -70,10 +65,6 @@ pick_card(Cards) ->
     Card = lists:nth(Index, Cards),
     Card.
 
-remove_card(X, Cards) ->
-    NewCards = [N || N <- Cards, N /= X],
-    NewCards.
-
 card_value(Card) ->
     CardValue = string:sub_string(Card, 1, 1),
     case CardValue of
@@ -92,46 +83,19 @@ card_value(Card) ->
         "9" -> 9
     end.
 
-
-
-% simulacija igre i poziva funkcija
-game_simulator() ->
-    Cards = generate_cards(),
-    io:format("Karte su generirane! ~n"),
-
-    io:format("Broj karata u spilu: ~p~n", [number_of_cards(Cards)]),
-    io:format("~n --- Dealer vuce 1. kartu --- ~n"),
-    Card1 = pick_card(Cards),
-    NewCards1 = remove_card(Card1, Cards),
-    io:format("Izvucena je karta: ~p~n", [Card1]),
-    CardValue1 = card_value(Card1),
-    io:format("Vrijednost ruke: ~p~n", [CardValue1]),
-    io:format("Broj karata u spilu: ~p~n", [number_of_cards(NewCards1)]),
-
-    io:format("~n --- Dealer vuce 2. kartu --- ~n"),
-    Card2 = pick_card(Cards),
-    NewCards2 = remove_card(Card2, Cards),
-    io:format("Izvucena je karta: ~p~n", [Card2]),
-    CardValue2 = card_value(Card2) + CardValue1,
-    io:format("Vrijednost ruke: ~p~n", [CardValue2]),
-    io:format("Broj karata u spilu: ~p~n", [number_of_cards(NewCards2)]),
-
-    if CardValue2 < 16 -> io:format("~n --- Dealer vuce jos jednu kartu --- ~n")
-    ; CardValue2 < 21 -> io:format("~n --- Provjere --- ~n")
-    ; CardValue2 >= 21 -> io:format("~n --- Dealer bust --- ~n")
-    end.
-
+% player s brojem ID zeli vuci kartu
 handle_call({draw_card_request}, _From, State) ->
-    Cards = generate_cards(),
-    io:format("Broj karata u spilu: ~p~n", [number_of_cards(Cards)]),
-    io:format("~n --- Player vuce kartu --- ~n"),
+    % izvlacenje karte i pripremanje novog spila bez iste
+    Cards = State#game_info.deck,
     Card = pick_card(Cards),
-    %NewCards = remove_card(Card, Cards), ---> ovo sredi u pravom spilu
-    io:format("Izvucena je karta: ~p~n", [Card]),
+    NewCards = delete(Card, Cards),
+
+    % dodavanje vrijednosti u ukupnu sumu igraca
     CardValue = card_value(Card),
-    NewSum = State#player_hand.sum + CardValue,
-    NewState = State#player_hand{sum = NewSum},
-    {reply, Card, NewState};
+
+    % azuriraj stanje
+    NewState = State#game_info{deck = NewCards},
+    {reply, CardValue, NewState};
 
 handle_call(_Request, _From, State) ->
     Reply = ok,
@@ -142,14 +106,7 @@ handle_call(_Request, _From, State) ->
 % handle_call
 % funkcija vraca novce playeru, 0 ili dobitak
 request_card() ->
-    NewState = gen_server:call(?MODULE, {draw_card_request}),
-    Sum = NewState#player_hand.sum,
-    Bet = NewState#player_hand.bet,
-    if
-        Sum > 21 -> 0;
-        Sum == 21 -> 1.5 * Bet
-    end.
+    {reply, DrawnCard, UpdatedState} = gen_server:call(?MODULE, {draw_card_request}),
+    DrawnCard.
 
-
-
-
+% ako je suma blackjack -> napravi atom blackjack i vrati to
