@@ -191,7 +191,7 @@ handle_cast({all_players_ready}, State) ->
             end,
             lists:foreach(
                 fun(ShellPid) ->
-                    gen_server:cast(ShellPid, HandValue)
+                    gen_server:cast(ShellPid, HandValue2)
                 end,
                 State
             )
