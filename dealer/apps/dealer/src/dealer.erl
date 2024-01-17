@@ -144,31 +144,16 @@ handle_cast({all_players_ready}, State) ->
     if
         % ako dealer ima vise od 21 u ruci
         HandValue > 21 ->
-            lists:foreach(
-                fun(ShellPid) ->
-                    gen_server:cast(ShellPid, 'bust')
-                end,
-                State
-            ),
+            message_all('bust'),
             NewCards2 = NewCards;
         % ako dealer ima 21 u ruci
         % -> pozovi funkciju dealer_blackjack
         HandValue == 21 ->
-            lists:foreach(
-                fun(ShellPid) ->
-                    gen_server:cast(ShellPid, 'blackjack')
-                end,
-                State
-            ),
+            message_all('blackjack'),
             NewCards2 = NewCards;
         % ako dealer ima 17 ili vise u ruci
         HandValue >= 17 ->
-            lists:foreach(
-                fun(ShellPid) ->
-                    gen_server:cast(ShellPid, HandValue)
-                end,
-                State
-            ),
+            message_all(HandValue),
             NewCards2 = NewCards;
         % ako dealer ima manje od 17 u ruci
         HandValue < 17 ->
@@ -189,12 +174,7 @@ handle_cast({all_players_ready}, State) ->
                         true -> HandValue2 = HandValue + 11
                     end
             end,
-            lists:foreach(
-                fun(ShellPid) ->
-                    gen_server:cast(ShellPid, HandValue2)
-                end,
-                State
-            )
+            message_all(HandValue2)
     end,
 
     % popravi state
@@ -205,6 +185,9 @@ handle_cast({all_players_ready}, State) ->
 handle_cast(Msg, State) ->
     io:format("dealer cast: ~p~n", [Msg]),
     {noreply, State}.
+
+message_all(X)->
+    rpc:multicall(nodes(), player, [X]).
 
 % -----------------------------------------------------------------------------------------
 % ------------------------------------- CALL HANDLERS -------------------------------------
