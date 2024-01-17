@@ -286,7 +286,11 @@ handle_call(_Request, _From, State) ->
 hit() ->
     Card = gen_server:call(?MODULE, {hit_request}),
     CardValue = card_value(Card),
-    CardValue.
+    if
+        CardValue == 11 -> CardValueReduced = 1;
+        true -> CardValueReduced = CardValue
+    end,
+    CardValueReduced.
 
 % player javlja dealeru da ne zeli vise karata
 stand() ->
