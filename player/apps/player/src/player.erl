@@ -10,15 +10,13 @@
     terminate/2,
     code_change/3
 ]).
--export([poruka/1, message_dealer/1, generate_card/0, calculate_sum/1, send_dealers_count/1]).
-
--define(DEALER, 'dealer@localhost').
+-export([poruka/1, generate_card/0, calculate_sum/1, send_dealers_count/1]).
 
 % hand --> karte koje sam povukao
 % stake --> ulog
 % money --> balans
 % error --> error poruka
--record(state, {hand = [], stake = 0, money = 0, error = "none", dealer=0}).
+-record(state, {hand = [], stake = 0, money = 0, error = "none", dealer=0, dealerHost}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -41,8 +39,8 @@ poruka(Msg) ->
     gen_server:cast(player, Msg),
     string:concat("Primjer poruka: ", Msg).
 
-message_dealer(Msg) ->
-    rpc:call(?DEALER, dealer, poruka, [Msg]).
+% message_dealer(Msg) ->
+%     rpc:call(?DEALER, dealer, poruka, [Msg]).
 
 % -----------------------------------------------------------------------------------------
 % ------------------------------------ CARD OPERATIONS ------------------------------------
@@ -154,20 +152,22 @@ handle_call(_Request, _From, State) ->
 
 handle_cast(start, _) ->
     timer:sleep(1000),
-    io:format("~nDobrodosli u erlang-blackjack, upisite svoje ime: ~n"),
-    Name = io:get_line(""),
-    FormattedName = string:trim(Name),
+    io:format("Povezivanje s dealerom...~n"),
+    {ok, Socket} = gen_udp:open(12345, [binary, {active, false}]),
+    {ok, {_, _, DealerBinary}} = gen_udp:recv(Socket, 0),
+    gen_udp:close(Socket),
+    Dealer = list_to_atom(binary_to_list(DealerBinary)),
+    net_adm:ping(Dealer),
+    io:format("Povezano!~n"),
     io:format("Upisite svoj balans: "),
     MoneyStr = io:get_line(""),
     {ok, [Money], _} = io_lib:fread("~d", MoneyStr),
     io:format("Upisite svoj ulog: "),
     StakeStr = io:get_line(""),
     {ok, [Stake], _} = io_lib:fread("~d", StakeStr),
-    net_kernel:start([list_to_atom(FormattedName), shortnames]),
-    io:format("Dobrodosli ~p!~nBalans: ~p~nUlog: ~p~n", [FormattedName, Money, Stake]),
+    io:format("Dobrodosli!~nBalans: ~p~nUlog: ~p~n", [Money, Stake]),
     io:format("Za pomoc u igri napisite help!~n~n"),
-    net_adm:ping(?DEALER),
-    UpdatedState = #state{hand = [], stake = Stake, money = Money, error = "none", dealer=0},
+    UpdatedState = #state{hand = [], stake = Stake, money = Money, error = "none", dealer=0, dealerHost=Dealer},
     loop_while_quit(UpdatedState),
     {noreply, UpdatedState};
 handle_cast(startgame, State) when State#state.stake =< 0 ->
@@ -177,7 +177,7 @@ handle_cast(startgame, State) when State#state.stake > State#state.money ->
 handle_cast(startgame, State) when length(State#state.hand) > 0 ->
     {noreply, State#state{error = "starterror"}};
 handle_cast(startgame, State) ->
-    Resp = rpc:call(?DEALER, dealer, ready, []),
+    Resp = rpc:call(State#state.dealerHost, dealer, ready, []),
     Hand = [element(1, Resp), element(2, Resp)],
     DealersCard = element(3, Resp),
     io:format("Dobili ste karte: ~p~n", [Hand]),
@@ -188,7 +188,7 @@ handle_cast(hit, State) when length(State#state.hand) == 0 ->
     UpdatedState = State#state{error = "hiterror"},
     {noreply, UpdatedState};
 handle_cast(hit, State) ->
-    Card = rpc:call(?DEALER, dealer, hit, []),
+    Card = rpc:call(State#state.dealerHost, dealer, hit, []),
     UpdatedState = State#state{hand = [Card | State#state.hand]},
     io:format("Dobili ste kartu: ~p~n", [Card]),
     io:format("Trenutne karte: ~p~n", [UpdatedState#state.hand]),
@@ -217,7 +217,7 @@ handle_cast(stand, State) ->
             io:format("blackjack"),
             UpdatedState=UpdatedState#state{hand=[100]}
     end,
-    rpc:call(?DEALER, dealer, stand, []),
+    rpc:call(State#state.dealerHost, dealer, stand, []),
     io:format("Cekamo dealerove karte..."),
     {noreply, UpdatedState};
 handle_cast(Msg, State) ->
