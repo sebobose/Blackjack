@@ -34,7 +34,7 @@ init([]) ->
 
     % ako je karta as, stavi flag blackjack na 1
     if
-        CardValue == 11 -> Blackjack = 1;
+        CardValue >= 11 -> Blackjack = 1;
         CardValue < 11  -> Blackjack = 0
     end,
 
@@ -109,7 +109,8 @@ card_value(Card) ->
         "6" -> 6;
         "7" -> 7;
         "8" -> 8;
-        "9" -> 9
+        "9" -> 9;
+        true -> ignore
     end.
 
 % -----------------------------------------------------------------------------------------
@@ -130,14 +131,15 @@ handle_cast({all_players_ready}, State) ->
     % provjeri dealerovu kartu
     Blackjack1 = State#game_info.blackjack,
     if
-        CardValue == 11 -> Blackjack2 = Blackjack1 + 1;
+        CardValue >= 11 -> Blackjack2 = Blackjack1 + 1;
         CardValue < 11  -> Blackjack2 = Blackjack1
     end,
 
     % preracunaj ako je dealer izvukao asa
     if
         Blackjack2 == 2 -> HandValue = 12;
-        Blackjack2 == 1 -> HandValue = CardValue + State#game_info.my_hand
+        Blackjack2 == 1 -> HandValue = CardValue + State#game_info.my_hand;
+        true -> HandValue = State#game_info.my_hand
     end,
 
 
@@ -161,14 +163,14 @@ handle_cast({all_players_ready}, State) ->
             NewCards2 = delete(Card2, NewCards),
             CardValue2 = card_value(Card2),
             if
-                CardValue2 == 11 -> Blackjack3 = Blackjack2 + 1;
+                CardValue2 >= 11 -> Blackjack3 = Blackjack2 + 1;
                 CardValue2 < 11  -> Blackjack3 = Blackjack2
             end,
             if
                 Blackjack3 == 1 -> HandValue2 = 13;
                 Blackjack3 == 2 ->
                     HandValue2 = HandValue + 1;
-                Blackjack3 == 1 ->
+                Blackjack3 == 3 ->
                     if
                         HandValue + CardValue2 > 21 -> HandValue2 = HandValue + 1;
                         true -> HandValue2 = HandValue + 11
@@ -190,12 +192,42 @@ message_all(X)->
     rpc:multicall(nodes(), player, [X]).
 
 % -----------------------------------------------------------------------------------------
+% --------------------------------------- INTERNAL ----------------------------------------
+% -----------------------------------------------------------------------------------------
+
+reduce_value(CardValue) ->
+    if
+        CardValue == 11 -> CardValueReduced = 1;
+        true -> CardValueReduced = CardValue
+    end,
+    CardValueReduced.
+
+draw_two(Deck) ->
+    Length = length(Deck),
+    if
+        Length > 53  -> Cards = Deck;
+        Length =< 53 -> Cards = generate_deck()
+    end,
+
+    % izvuci kartu i ukloni je iz decka
+    Card1 = pick_card(Cards),
+    NewCards1 = delete(Card1, Cards),
+
+    % izvuci kartu i ukloni je iz decka
+    Card2 = pick_card(NewCards1),
+    NewCards2 = delete(Card2, NewCards1),
+    NewCards2,
+
+    CardValueReduced1 = reduce_value(Card1),
+    CardValueReduced2 = reduce_value(Card2),
+    {CardValueReduced1, CardValueReduced2, NewCards2}.
+
+% -----------------------------------------------------------------------------------------
 % ------------------------------------- CALL HANDLERS -------------------------------------
 % -----------------------------------------------------------------------------------------
 
 % zahtjev za izvlacenje karte
 handle_call({hit_request}, _From, State) ->
-    % provjera ima li karata u decku - ako nema, generiraj novi deck
     Length = length(State#game_info.deck),
     if
         Length > 52  -> Cards = State#game_info.deck;
@@ -213,43 +245,47 @@ handle_call({hit_request}, _From, State) ->
 % player trazi prve dvije karte i spreman je za rundu
 handle_call({player_ready}, _From, State) ->
     % izvuci dvije karte
-    Card1 = hit(),
-    Card2 = hit(),
+    {Card1, Card2, NewCards} = draw_two(State#game_info.deck),
+
     % pripremi return tuple s igracevim kartama i dealerovom kartom
     DealerHand = State#game_info.my_hand,
     ReturnInfo = {Card1, Card2, DealerHand},
 
     % provjeri ima li player blackjack
-    PlayersNo = nodes(),
+    PlayersNo = length(nodes()),
     if
-        Card1 + Card2 == 21 ->
+        Card1 + Card2 >= 21 ->
             Out = State#game_info.out + 1,
             Ready = State#game_info.players_ready;
         Card1 + Card2 < 21  ->
             Out = State#game_info.out,
-            Ready = State#game_info.players_ready + 1
+            Ready = State#game_info.players_ready + 1;
+        true -> Out = 0, Ready = 0
     end,
 
     % provjeri jesu li svi spremni -> ako jesu izvlacenje druge karte
     PlayersNotReady = PlayersNo - Out - Ready,
     if
-        PlayersNotReady =< 0 -> gen_server:cast(?MODULE, {all_players_ready})
+        PlayersNotReady =< 0 -> gen_server:cast(?MODULE, {all_players_ready});
+        true -> ignore
     end,
 
     % azuriraj stanje
-    NewState = State#game_info{out = Out, players_ready = Ready},
+    NewState = State#game_info{out = Out, players_ready = Ready, deck = NewCards},
+
     {reply, ReturnInfo, NewState};
 
 % player javlja dealeru da ne zeli vise karata
 handle_call({stand_request}, _From, State) ->
-    PlayersNo = nodes(),
+    PlayersNo = length(nodes()),
     Out = State#game_info.out,
     Ready = State#game_info.players_ready + 1,
 
     % provjeri jesu li svi spremni -> ako jesu izvlacenje druge karte
     PlayersNotReady = PlayersNo - Out - Ready,
     if
-        PlayersNotReady =< 0 -> gen_server:cast(?MODULE, {all_players_ready})
+        PlayersNotReady =< 0 -> gen_server:cast(?MODULE, {all_players_ready});
+        true -> ignore
     end,
 
     % azuriraj stanje
@@ -258,14 +294,15 @@ handle_call({stand_request}, _From, State) ->
 
 % player javlja dealeru da je bustao
 handle_call({bust_request}, _From, State) ->
-    PlayersNo = nodes(),
+    PlayersNo = length(nodes()),
     Out = State#game_info.out + 1,
     Ready = State#game_info.players_ready,
 
     % provjeri jesu li svi spremni -> ako jesu izvlacenje druge karte
     PlayersNotReady = PlayersNo - Out - Ready,
     if
-        PlayersNotReady =< 0 -> gen_server:cast(?MODULE, {all_players_ready})
+        PlayersNotReady =< 0 -> gen_server:cast(?MODULE, {all_players_ready});
+        true -> ignore
     end,
 
     % azuriraj stanje
@@ -286,10 +323,7 @@ handle_call(_Request, _From, State) ->
 hit() ->
     Card = gen_server:call(?MODULE, {hit_request}),
     CardValue = card_value(Card),
-    if
-        CardValue == 11 -> CardValueReduced = 1;
-        true -> CardValueReduced = CardValue
-    end,
+    CardValueReduced = reduce_value(CardValue),
     CardValueReduced.
 
 % player javlja dealeru da ne zeli vise karata
