@@ -159,11 +159,9 @@ handle_cast(start, _) ->
     Dealer = list_to_atom(binary_to_list(DealerBinary)),
     net_adm:ping(Dealer),
     io:format("Povezano!~n"),
-    io:format("Upisite svoj balans: "),
-    MoneyStr = io:get_line(""),
+    MoneyStr = io:get_line("Upisite svoj balans: "),
     {ok, [Money], _} = io_lib:fread("~d", MoneyStr),
-    io:format("Upisite svoj ulog: "),
-    StakeStr = io:get_line(""),
+    StakeStr = io:get_line("Upisite svoj ulog: "),
     {ok, [Stake], _} = io_lib:fread("~d", StakeStr),
     io:format("Dobrodosli!~nBalans: ~p~nUlog: ~p~n", [Money, Stake]),
     io:format("Za pomoc u igri napisite help!~n~n"),
@@ -213,13 +211,14 @@ handle_cast(stand, State) ->
     io:format("Suma: ~p~n", [Sum]),
     UpdatedState=State#state{error = "wait"},
     if
-        Sum == 21, length(State#state.hand)==2  ->
+        Sum == 21 andalso length(State#state.hand)==2  ->
             io:format("blackjack"),
-            UpdatedState=UpdatedState#state{hand=[100]}
+            UpdatedState2=UpdatedState#state{hand=[100]};
+        true -> UpdatedState2 = UpdatedState
     end,
     rpc:call(State#state.dealerHost, dealer, stand, []),
     io:format("Cekamo dealerove karte..."),
-    {noreply, UpdatedState};
+    {noreply, UpdatedState2};
 handle_cast(Msg, State) ->
     io:format("Dealer got count: ~p~n", [Msg]),
     Count=element(1,calculate_sum(State#state.hand)),
