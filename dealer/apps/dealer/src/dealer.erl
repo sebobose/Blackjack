@@ -17,7 +17,7 @@
 % players_no -> ukupan broj igraca
 % players_ready -> broj igraca koji su zvali 'stand'
 % out -> broj igraca koji su bustali ili dobili blackjack
--record(game_info, {my_hand = 0.0, blackjack = 0, deck = generate_cards(), players_ready = 0, out = 0, socket}).
+-record(game_info, {my_hand = 0.0, blackjack = 0, deck = generate_cards(), players_ready = 0, out = 0}).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -37,20 +37,17 @@ init([]) ->
         CardValue >= 11 -> Blackjack = 1;
         CardValue < 11  -> Blackjack = 0
     end,
-    gen_server:cast(?MODULE, start),
+
     InitialState = #game_info{deck = NewCards, my_hand = CardValue, blackjack = Blackjack},
     {ok, InitialState}.
 
-handle_info({send_udp_message, Host}, State = #game_info{socket = Socket}) ->
-    ok = gen_udp:send(Socket, {255,255,255,255}, 12345, Host),
-    {noreply, State};
+
 
 handle_info(Info, State) ->
     io:format("dealer info: ~p~n", [Info]),
     {noreply, State}.
 
-terminate(_Reason, #game_info{socket = Socket}) ->
-    ok = gen_udp:close(Socket),
+terminate(_Reason, _State) ->
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -120,13 +117,6 @@ card_value(Card) ->
 % ------------------------------------- CAST HANDLERS -------------------------------------
 % -----------------------------------------------------------------------------------------
 
-handle_cast(start, State) ->
-    timer:sleep(1000),
-    Dealer = string:concat("dealer@", net_adm:localhost()),
-    timer:send_interval(5000, {send_udp_message, Dealer}),
-    {ok, Socket} = gen_udp:open(0, [{broadcast, true}]),
-    {noreply, State#game_info{socket = Socket}};
-
 % svi playeri su spremni za dalje
 handle_cast({all_players_ready}, State) ->
     % sacekaj tri sekunde
@@ -154,20 +144,20 @@ handle_cast({all_players_ready}, State) ->
 
 
     if
-        % ako dealer ima vise od 21 u ruci
+    % ako dealer ima vise od 21 u ruci
         HandValue > 21 ->
             message_all('bust'),
             NewCards2 = NewCards;
-        % ako dealer ima 21 u ruci
-        % -> pozovi funkciju dealer_blackjack
+    % ako dealer ima 21 u ruci
+    % -> pozovi funkciju dealer_blackjack
         HandValue == 21 ->
             message_all('blackjack'),
             NewCards2 = NewCards;
-        % ako dealer ima 17 ili vise u ruci
+    % ako dealer ima 17 ili vise u ruci
         HandValue >= 17 ->
             message_all(HandValue),
             NewCards2 = NewCards;
-        % ako dealer ima manje od 17 u ruci
+    % ako dealer ima manje od 17 u ruci
         HandValue < 17 ->
             %Card2 = pick_card(NewCards),
             %NewCards2 = delete(Card2, NewCards),
@@ -375,4 +365,3 @@ bust() ->
 ready() ->
     InitialCards = gen_server:call(?MODULE, {player_ready}),
     InitialCards.
-
