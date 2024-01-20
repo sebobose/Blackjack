@@ -10,7 +10,7 @@
     terminate/2,
     code_change/3
 ]).
--export([poruka/1, generate_card/0, calculate_sum/1, send_dealers_count/1]).
+-export([poruka/1, generate_card/0, calculate_sum/1, send_dealers_count/1, end_game/1]).
 
 % hand --> karte koje sam povukao
 % stake --> ulog
@@ -263,3 +263,6 @@ generate_card() ->
 
 send_dealers_count(Card) ->
     gen_server:cast(player, Card).
+
+end_game(Msg) ->
+    gen_server:cast(?MODULE, Msg).

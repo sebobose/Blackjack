@@ -130,7 +130,7 @@ handle_cast(start, State) ->
 % svi playeri su spremni za dalje
 handle_cast({all_players_ready}, State) ->
     % sacekaj tri sekunde
-    sleep(3000),
+    sleep(1000),
 
     %dealer izvlaci drugu kartu
     Deck = State#game_info.deck,
@@ -190,8 +190,8 @@ handle_cast({all_players_ready}, State) ->
                 HandValue2 > 21 -> message_all('bust');
                 true -> message_all(HandValue2)
             end
-    end,
 
+    end,
     % popravi state
     NewState = NewState = State#game_info{deck = NewCards2, players_ready = 0, my_hand = 0, blackjack = 0, out = 0},
     {noreply, NewState};
@@ -202,7 +202,7 @@ handle_cast(Msg, State) ->
     {noreply, State}.
 
 message_all(X)->
-    rpc:multicall(nodes(), player, [X]).
+    rpc:multicall(nodes(), player, end_game, [X]).
 
 % -----------------------------------------------------------------------------------------
 % --------------------------------------- INTERNAL ----------------------------------------
@@ -325,7 +325,7 @@ handle_call({stand_request}, _From, State) ->
 
     % azuriraj stanje
     NewState = State#game_info{players_ready = Ready},
-    {reply, NewState};
+    {reply, ok, NewState};
 
 % player javlja dealeru da je bustao
 handle_call({bust_request}, _From, State) ->
