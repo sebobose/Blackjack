@@ -152,7 +152,6 @@ handle_cast({all_players_ready}, State) ->
         true -> HandValue = State#game_info.my_hand
     end,
 
-
     if
         % ako dealer ima vise od 21 u ruci
         HandValue > 21 ->
@@ -375,4 +374,3 @@ bust() ->
 ready() ->
     InitialCards = gen_server:call(?MODULE, {player_ready}),
     InitialCards.
-
