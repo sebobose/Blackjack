@@ -9,7 +9,7 @@
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
     terminate/2, code_change/3]).
--export([primjer/1, generate_cards/0, pick_card/1]).
+-export([primjer/1, generate_cards/0, pick_card/1, test_draw_while/0]).
 -export([stand/0, bust/0, hit/0, ready/0]).
 
 % my_hand -> zbroj karata u dealerovoj ruci
@@ -159,24 +159,28 @@ handle_cast({all_players_ready}, State) ->
             NewCards2 = NewCards;
         % ako dealer ima manje od 17 u ruci
         HandValue < 17 ->
-            Card2 = pick_card(NewCards),
-            NewCards2 = delete(Card2, NewCards),
-            CardValue2 = card_value(Card2),
+            %Card2 = pick_card(NewCards),
+            %NewCards2 = delete(Card2, NewCards),
+            %CardValue2 = card_value(Card2),
+            %if
+            %    CardValue2 >= 11 -> Blackjack3 = Blackjack2 + 1;
+            %    CardValue2 < 11  -> Blackjack3 = Blackjack2
+            %end,
+            %if
+            %    Blackjack3 == 1 -> HandValue2 = 13;
+            %    Blackjack3 == 2 ->
+            %        HandValue2 = HandValue + 1;
+            %    Blackjack3 == 3 ->
+            %        if
+            %            HandValue + CardValue2 > 21 -> HandValue2 = HandValue + 1;
+            %            true -> HandValue2 = HandValue + 11
+            %        end
+            %end,
+            {HandValue2, NewCards2} = draw_while(HandValue, 17, NewCards),
             if
-                CardValue2 >= 11 -> Blackjack3 = Blackjack2 + 1;
-                CardValue2 < 11  -> Blackjack3 = Blackjack2
-            end,
-            if
-                Blackjack3 == 1 -> HandValue2 = 13;
-                Blackjack3 == 2 ->
-                    HandValue2 = HandValue + 1;
-                Blackjack3 == 3 ->
-                    if
-                        HandValue + CardValue2 > 21 -> HandValue2 = HandValue + 1;
-                        true -> HandValue2 = HandValue + 11
-                    end
-            end,
-            message_all(HandValue2)
+                HandValue2 > 21 -> message_all('bust');
+                true -> message_all(HandValue2)
+            end
     end,
 
     % popravi state
@@ -194,6 +198,28 @@ message_all(X)->
 % -----------------------------------------------------------------------------------------
 % --------------------------------------- INTERNAL ----------------------------------------
 % -----------------------------------------------------------------------------------------
+
+test_draw_while() ->
+    Cards = generate_deck(),
+    {Sum, NewCards} = draw_while(0, 17, Cards),
+    {Sum, length(NewCards)}.
+
+draw_while(CurrentSum, MinSum, Cards) ->
+    if
+        CurrentSum >= MinSum-> Sum = CurrentSum, NewCards = Cards;
+        true ->
+            % izvuci kartu i ukloni je iz decka
+            Card = pick_card(Cards),
+            TempNewCards = delete(Card, Cards),
+            CardValue = card_value(Card),
+            if
+                CardValue == 11 andalso CurrentSum + 11 > 21 -> TempSum = CurrentSum + 1;
+                true -> TempSum = CurrentSum + CardValue
+            end,
+            {Sum, NewCards} = draw_while(TempSum, MinSum, TempNewCards)
+    end,
+    {Sum, NewCards}.
+
 
 reduce_value(CardValue) ->
     if
@@ -230,8 +256,8 @@ draw_two(Deck) ->
 handle_call({hit_request}, _From, State) ->
     Length = length(State#game_info.deck),
     if
-        Length > 52  -> Cards = State#game_info.deck;
-        Length =< 52 -> Cards = generate_deck()
+        Length > 100  -> Cards = State#game_info.deck;
+        Length =< 100 -> Cards = generate_deck()
     end,
 
     % izvuci kartu i ukloni je iz decka
