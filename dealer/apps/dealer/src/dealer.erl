@@ -116,6 +116,25 @@ card_value(Card) ->
         true -> ignore
     end.
 
+card_value_for_player(Card) ->
+    CardValue = string:sub_string(Card, 1, 1),
+    case CardValue of
+        "A" -> 1;
+        "1" -> 10;
+        "J" -> "J";
+        "Q" -> "Q";
+        "K" -> "K";
+        "2" -> 2;
+        "3" -> 3;
+        "4" -> 4;
+        "5" -> 5;
+        "6" -> 6;
+        "7" -> 7;
+        "8" -> 8;
+        "9" -> 9;
+        true -> ignore
+    end.
+
 % -----------------------------------------------------------------------------------------
 % ------------------------------------- CAST HANDLERS -------------------------------------
 % -----------------------------------------------------------------------------------------
@@ -230,12 +249,12 @@ draw_while(CurrentSum, MinSum, Cards) ->
     {Sum, NewCards}.
 
 
-reduce_value(CardValue) ->
-    if
-        CardValue == 11 -> CardValueReduced = 1;
-        true -> CardValueReduced = CardValue
-    end,
-    CardValueReduced.
+%reduce_value(CardValue) ->
+%    if
+%        CardValue == 11 -> CardValueReduced = 1;
+%        true -> CardValueReduced = CardValue
+%    end,
+%    CardValueReduced.
 
 draw_two(Deck) ->
     Length = length(Deck),
@@ -253,8 +272,8 @@ draw_two(Deck) ->
     NewCards2 = delete(Card2, NewCards1),
     NewCards2,
 
-    CardValueReduced1 = reduce_value(Card1),
-    CardValueReduced2 = reduce_value(Card2),
+    CardValueReduced1 = card_value_for_player(Card1),
+    CardValueReduced2 = card_value_for_player(Card2),
     {CardValueReduced1, CardValueReduced2, NewCards2}.
 
 % -----------------------------------------------------------------------------------------
@@ -357,9 +376,8 @@ handle_call(_Request, _From, State) ->
 % return - vrijednost karte
 hit() ->
     Card = gen_server:call(?MODULE, {hit_request}),
-    CardValue = card_value(Card),
-    CardValueReduced = reduce_value(CardValue),
-    CardValueReduced.
+    CardValue = card_value_for_player(Card),
+    CardValue.
 
 % player javlja dealeru da ne zeli vise karata
 stand() ->
