@@ -212,7 +212,19 @@ handle_cast({all_players_ready}, State) ->
 
     end,
     % popravi state
-    NewState = NewState = State#game_info{deck = NewCards2, players_ready = 0, my_hand = 0, blackjack = 0, out = 0},
+
+    % izvuci kartu i ukloni je iz decka
+    CardNewRound = pick_card(NewCards2),
+    CardValueNewRound = card_value(CardNewRound),
+    CardsNewRound = delete(CardNewRound, NewCards2),
+
+    % ako je karta as, stavi flag blackjack na 1
+    if
+        CardValueNewRound >= 11 -> BlackjackNewRound = 1;
+        CardValueNewRound < 11  -> BlackjackNewRound = 0
+    end,
+    
+    NewState = State#game_info{deck = CardsNewRound, players_ready = 0, my_hand = CardValueNewRound, blackjack = BlackjackNewRound, out = 0},
     {noreply, NewState};
 
 
@@ -325,7 +337,7 @@ handle_call({player_ready}, _From, State) ->
     end,
 
     % azuriraj stanje
-    NewState = State#game_info{out = Out, players_ready = Ready, deck = NewCards},
+    NewState = State#game_info{out = Out, players_ready = Ready, deck = NewCards, my_hand = DealerHand},
 
     {reply, ReturnInfo, NewState};
 
