@@ -78,7 +78,6 @@ transform_list([Head | Tail], Acc) ->
 
 calculate_sum(Cards) ->
     Cards2= transform_list(Cards),
-    io:format("KARTE NOVE:  ~p~n", [Cards2]),
     calculate_sum(Cards2, 0, 0).
 
 calculate_sum([], Sum, Aces) when Aces > 0, Sum + 10 + Aces =< 21 ->
@@ -100,11 +99,12 @@ calculate_sum([Card | Rest], Sum, Aces) when Card > 10 ->
 loop_while_quit(State) ->
     case State#state.error of
         "dealers_count" ->
-            io:format("Dealer got count: ~p~n", [State#state.dealer]),
+            io:format("~nDEALEROVA SUMA:  ~p~n", [State#state.dealer]),
             Count = element(1, calculate_sum(State#state.hand)),
+            io:format("~nVAŠA SUMA:       ~p~n", [Count]),
             if
-                Count == 100 ->
-                    io:format("BLACKJACK!!!.\n"),
+                Count == 21 andalso  length(State#state.hand)==2 ->
+                    io:format("~nBLACKJACK!!!.\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -112,7 +112,7 @@ loop_while_quit(State) ->
                         money = State#state.money + State#state.stake * 1.5
                     };
                 Count > 21 ->
-                    io:format("Bust.\n"),
+                    io:format("~nBUST.\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -120,7 +120,7 @@ loop_while_quit(State) ->
                         money = State#state.money - State#state.stake
                     };
                 State#state.dealer == 'blackjack' ->
-                    io:format("Dealer pobjeduje.\n"),
+                    io:format("~nDEALER POBJEĐUJE.\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -128,7 +128,7 @@ loop_while_quit(State) ->
                         money = State#state.money - State#state.stake
                     };
                 State#state.dealer == 'bust' ->
-                    io:format("POBJEDA!\n"),
+                    io:format("~nPOBJEDA!\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -136,7 +136,7 @@ loop_while_quit(State) ->
                         money = State#state.money + State#state.stake
                     };
                 Count < State#state.dealer ->
-                    io:format("Dealer pobjeduje.\n"),
+                    io:format("~nDEALER POBJEĐUJE.\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -144,7 +144,7 @@ loop_while_quit(State) ->
                         money = State#state.money - State#state.stake
                     };
                 Count > State#state.dealer ->
-                    io:format("POBJEDA!\n"),
+                    io:format("~nPOBJEDA!\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -152,14 +152,14 @@ loop_while_quit(State) ->
                         money = State#state.money + State#state.stake
                     };
                 true ->
-                    io:format("Push.\n"),
+                    io:format("~nPUSH.\n"),
                     UpdatedState = State#state{hand = [], error = "none", dealer = 0}
             end,
             io:format("\nBALANS:   ~p\nULOG:     ~p\n\n", [UpdatedState#state.money, UpdatedState#state.stake]),
             gen_server:cast(player, {change, UpdatedState}),
             loop_while_quit(UpdatedState);
         "wait" ->
-            io:format("Cekamo dealerove karte~n~n"),
+            io:format("~nČEKAMO DEALEROVE KARTE ...~n~n"),
             {noreply, State};
         _ ->
             case io:get_line("INPUT:   ") of
@@ -169,7 +169,7 @@ loop_while_quit(State) ->
                     NewState = element(2, handle_user_input(Input, State)),
                     case NewState#state.error of
                         "bust" ->
-                            io:format("BUST!~n"),
+                            io:format("~nBUST!~n~n"),
                             handle_user_input("stand\n", NewState),
                             loop_while_quit(NewState#state{
                                 hand = [],
@@ -179,26 +179,26 @@ loop_while_quit(State) ->
                         "none" ->
                             loop_while_quit(NewState);
                         "stake" ->
-                            io:format("Morate staviti ulog.~n"),
+                            io:format("~nMorate staviti ulog.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "money" ->
-                            io:format("Nedovoljno novaca na računu(~p), smanjite ulog(~p).~n", [
+                            io:format("~nNedovoljno novaca na računu(~p), smanjite ulog(~p).~n~n", [
                                 NewState#state.money, NewState#state.stake
                             ]),
                             loop_while_quit(NewState#state{error = "none"});
                         "card" ->
-                            io:format("Ne možete ostati ako nemate karata.~n"),
+                            io:format("~nNe možete ostati ako nemate karata.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "starterror" ->
-                            io:format("Igra je već započeta.~n"),
+                            io:format("~nIgra je već započeta.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "hiterror" ->
-                            io:format("Morate započeti igru.~n"),
+                            io:format("~nMorate započeti igru.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "wait" ->
                             loop_while_quit(NewState#state{error = "wait"});
                         _ ->
-                            io:format("Error: ~p~n", [NewState#state.error]),
+                            io:format("~nError: ~p~n~n", [NewState#state.error]),
                             loop_while_quit(NewState#state{error = "none"})
                     end
             end
@@ -212,7 +212,7 @@ handle_user_input("stand\n", State) ->
 handle_user_input("start\n", State) ->
     handle_func(startgame, State);
 handle_user_input("stake\n", State) ->
-    io:format("Promijenite svoj ulog: "),
+    io:format("~nPromijenite svoj ulog: "),
     StakeStr = io:get_line(""),
     {ok, [Stake], _} = io_lib:fread("~d", StakeStr),
     gen_server:cast(player, {change, State#state{stake = Stake}}),
@@ -229,7 +229,7 @@ handle_user_input("help\n", State) ->
     ),
     {noreply, State};
 handle_user_input(_, State) ->
-    io:format("Invalid input.~n"),
+    io:format("~nInvalid input.~n"),
     {noreply, State}.
 
 % -----------------------------------------------------------------------------------------
@@ -254,12 +254,11 @@ handle_func(startgame, State) when length(State#state.hand) > 0 ->
     {noreply, State#state{error = "starterror"}};
 handle_func(startgame, State) ->
     Resp = rpc:call(State#state.dealerHost, dealer, ready, []),
-    io:format("STATUS: ~p~n", [Resp]),
     Hand = [element(1, Resp), element(2, Resp)],
     DealersCard = element(3, Resp),
-    io:format("Dobili ste karte: ~p~n", [Hand]),
-    io:format("Suma: ~p~n", [calculate_sum(Hand)]),
-    io:format("Dealerova karta: ~p~n", [DealersCard]),
+    io:format("~nKARTE:           ~p~n", [Hand]),
+    io:format("~nSUMA:            ~p~n", [calculate_sum(Hand)]),
+    io:format("~nDEALEROVA KARTA: ~p~n~n", [DealersCard]),
     gen_server:cast(player, {change, State#state{hand = Hand, dealer = DealersCard}}),
     {noreply, State#state{hand = Hand, dealer = DealersCard}};
 handle_func(hit, State) when length(State#state.hand) == 0 ->
@@ -269,9 +268,9 @@ handle_func(hit, State) when length(State#state.hand) == 0 ->
 handle_func(hit, State) ->
     Card = rpc:call(State#state.dealerHost, dealer, hit, []),
     UpdatedState = State#state{hand = [Card | State#state.hand]},
-    io:format("Dobili ste kartu: ~p~n", [Card]),
-    io:format("Trenutne karte: ~p~n", [UpdatedState#state.hand]),
-    io:format("Suma: ~p~n", [calculate_sum(UpdatedState#state.hand)]),
+    io:format("NOVA KARTA:   ~p~n", [Card]),
+    io:format("KARTE:        ~p~n", [UpdatedState#state.hand]),
+    io:format("SUMA:         ~p~n~n", [calculate_sum(UpdatedState#state.hand)]),
     case
         {
             element(2, calculate_sum(UpdatedState#state.hand)),
@@ -293,23 +292,16 @@ handle_func(stand, State) when State#state.hand == [] ->
     {noreply, UpdatedState};
 handle_func(stand, State) ->
     Sum = element(1, calculate_sum(State#state.hand)),
-    io:format("Ostajete s kartama: ~p~n", [State#state.hand]),
-    io:format("Suma: ~p~n", [Sum]),
+    io:format("~nSTAND!~n~nKARTE:  ~p~n", [State#state.hand]),
+    io:format("SUMA:   ~p~n", [Sum]),
     UpdatedState = State#state{error = "wait"},
-    if
-        Sum == 21 andalso length(State#state.hand) == 2 ->
-            io:format("blackjack"),
-            UpdatedState2 = UpdatedState#state{hand = [100]};
-        true ->
-            UpdatedState2 = UpdatedState
-    end,
+    gen_server:cast(player, {change, UpdatedState}),
     rpc:call(State#state.dealerHost, dealer, stand, []),
-    gen_server:cast(player, {change, UpdatedState2}),
-    {noreply, UpdatedState2}.
+    {noreply, UpdatedState}.
 
 handle_cast(start, _) ->
     timer:sleep(1000),
-    io:format("Povezivanje s dealerom...~n"),
+    io:format("Povezivanje s dealerom ...~n"),
     {ok, Socket} = gen_udp:open(12345, [binary, {active, false}]),
     {ok, {_, _, DealerBinary}} = gen_udp:recv(Socket, 0),
     gen_udp:close(Socket),
@@ -322,7 +314,7 @@ handle_cast(start, _) ->
     {ok, [Money], _} = io_lib:fread("~d", MoneyStr),
     StakeStr = io:get_line("Upisite svoj ulog: "),
     {ok, [Stake], _} = io_lib:fread("~d", StakeStr),
-    io:format("Dobrodosli!~nBalans: ~p~nUlog: ~p~n", [Money, Stake]),
+    io:format("Dobrodosli!~nBalans: ~p~nUlog:   ~p~n", [Money, Stake]),
     io:format("Za pomoc u igri napisite help!~n~n"),
     UpdatedState = #state{
         hand = [], stake = Stake, money = Money, error = "none", dealer = 0, dealerHost = Dealer
@@ -332,9 +324,14 @@ handle_cast(start, _) ->
 handle_cast({change, Delta}, _State) ->
     {noreply, Delta};
 handle_cast(Msg, State) ->
-    UpdatedState = State#state{dealer = Msg, error = "dealers_count"},
-    gen_server:cast(player, {change, UpdatedState}),
-    loop_while_quit(UpdatedState),
+    case State#state.error of 
+        "wait" ->
+            UpdatedState = State#state{dealer = Msg, error = "dealers_count"},
+            gen_server:cast(player, {change, UpdatedState}),
+            loop_while_quit(UpdatedState);
+        _ ->
+            UpdatedState = State
+    end,
     {noreply, UpdatedState}.
 
 % -----------------------------------------------------------------------------------------
