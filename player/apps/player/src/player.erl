@@ -101,7 +101,7 @@ loop_while_quit(State) ->
         "dealers_count" ->
             io:format("~nDEALEROVA SUMA:  ~p~n", [State#state.dealer]),
             Count = element(1, calculate_sum(State#state.hand)),
-            io:format("~nVAŠA SUMA:       ~p~n", [Count]),
+            io:format("~nVASA SUMA:       ~p~n", [Count]),
             if
                 Count == 21 andalso  length(State#state.hand)==2 ->
                     io:format("~nBLACKJACK!!!.\n"),
@@ -120,7 +120,7 @@ loop_while_quit(State) ->
                         money = State#state.money - State#state.stake
                     };
                 State#state.dealer == 'blackjack' ->
-                    io:format("~nDEALER POBJEĐUJE.\n"),
+                    io:format("~nDEALER POBJEDUJE.\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -136,7 +136,7 @@ loop_while_quit(State) ->
                         money = State#state.money + State#state.stake
                     };
                 Count < State#state.dealer ->
-                    io:format("~nDEALER POBJEĐUJE.\n"),
+                    io:format("~nDEALER POBJEDUJE.\n"),
                     UpdatedState = State#state{
                         hand = [],
                         error = "none",
@@ -159,7 +159,7 @@ loop_while_quit(State) ->
             gen_server:cast(player, {change, UpdatedState}),
             loop_while_quit(UpdatedState);
         "wait" ->
-            io:format("~nČEKAMO DEALEROVE KARTE ...~n~n"),
+            io:format("~nCEKAMO DEALEROVE KARTE ...~n~n"),
             {noreply, State};
         _ ->
             case io:get_line("INPUT:   ") of
@@ -182,18 +182,18 @@ loop_while_quit(State) ->
                             io:format("~nMorate staviti ulog.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "money" ->
-                            io:format("~nNedovoljno novaca na računu(~p), smanjite ulog(~p).~n~n", [
+                            io:format("~nNedovoljno novaca na racunu(~p), smanjite ulog(~p).~n~n", [
                                 NewState#state.money, NewState#state.stake
                             ]),
                             loop_while_quit(NewState#state{error = "none"});
                         "card" ->
-                            io:format("~nNe možete ostati ako nemate karata.~n~n"),
+                            io:format("~nNe mozete ostati ako nemate karata.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "starterror" ->
-                            io:format("~nIgra je već započeta.~n~n"),
+                            io:format("~nIgra je vec zapoceta.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "hiterror" ->
-                            io:format("~nMorate započeti igru.~n~n"),
+                            io:format("~nMorate zapoceti igru.~n~n"),
                             loop_while_quit(NewState#state{error = "none"});
                         "wait" ->
                             loop_while_quit(NewState#state{error = "wait"});
@@ -221,7 +221,7 @@ handle_user_input("help\n", State) ->
     io:format(
         "   HELP:~n\n"
         "   --------------------------------\n"
-        "   start --- početak igre~n\n"
+        "   start --- pocetak igre~n\n"
         "   hit   --- vuci kartu~n\n"
         "   stand --- dosta~n\n"
         "   stake --- promjena uloga~n\n"
