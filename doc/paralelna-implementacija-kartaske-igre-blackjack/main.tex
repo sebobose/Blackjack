@@ -140,13 +140,13 @@ Kako bismo ostvarili navedeno, razvili smo aplikaciju koja igračima dopušta si
 
 Prije donošenja odluke o tehnologiji za implementaciju igre Blackjack, nužno je detaljno razumjeti pravila i tijek igre, moguće poteze igrača, logiku djelitelja i ishode ovisno o vrijednostima karata u ruci, no za početak, osvrnimo se na osnovna pravila\break igre.
 
-Špil za kartanje igre Blackjack sastoji se od nekoliko standardnih špilova od pedeset i dvije karte, bez karte \textit{'joker'}. Karte od 2 do 10 nose vrijednost jednaku vlastitom broju, tako na primjer karta \textit{'3 srce'}, nosi vrijednost 3. Karte \textit{'dečko'}, \textit{'dama'} i \textit{'kralj'} nose vrijednost deset, dok situacija s kartom \textit{'as'} nije toliko jednostavna. Naime, početna vrijednost karte \textit{'as'} iznosi jedanaest – tada kažemo da je ruka \textit{'soft'}. Ukoliko je zbroj vrijednost karata u ruci veći od dvadeset jedan i ruka sadrži kartu \textit{'as'}, utoliko iznos njezine vrijednost više nije jedanaest, već jedan, čime ruka postaje\break \textit{'hard'}.
+Špil za kartanje igre Blackjack sastoji se od nekoliko standardnih špilova od pedeset i dvije karte, bez karte \textit{'joker'}. Karte od 2 do 10 nose vrijednost jednaku vlastitom broju, tako na primjer karta \textit{'3 srce'}, nosi vrijednost 3. Karte \textit{'dečko'}, \textit{'dama'} i \textit{'kralj'} nose vrijednost deset, dok situacija s kartom \textit{'as'} nije toliko jednostavna. Naime, početna vrijednost karte \textit{'as'} iznosi jedanaest – tada kažemo da je ruka \textit{'soft'}. Ukoliko je zbroj vrijednosti karata u ruci veći od dvadeset jedan i ruka sadrži kartu \textit{'as'}, utoliko iznos njezine vrijednosti više nije jedanaest, već jedan, čime ruka postaje\break \textit{'hard'}.
 
 Na početku igre, nakon što su igrači postavili svoje uloge, djelitelj dijeli po dvije karte svakom igraču i otkriva vrijednost jedne od svojih karata. Po primitku karata, svaki od igrača donosi jednu od dvije moguće odluke: zatražiti novu kartu od djelitelja (tzv. \textit{'hit'}) ili nastaviti igrati s trenutnim kartama (tzv. \textit{'stand'}). Ne postoji ograničenje koliko karata igrač može zatražiti od djelitelja, sve dok je zbroj vrijednosti karata u igračevoj ruci manji ili jednak broju dvadeset\break jedan. 
 
 Ako je u igračevoj ruci po dobitku prve dvije karte jednak dvadeset jedan, igrač je ostvario \textit{'blackjack'} (termin po kojem je igra dobila ime), čime igrač automatski osvaja iznos jednak dva i pol puta veći od uloga te je igra za njega gotova. Blackjack se postiže samo s dvije karte: \textit{'as-om'} i kartom vrijednosti deset. S druge strane, ako zbroj karata u igračevoj ruci premaši  dvadeset jedan (tzv. \textit{'bust'}), igrač gubi svoj ulog i završava igru. 
 
-Nakon što su svi igrači, osim onih koji su ostvarili \textit{'blackjack'} ili \textit{'bust'}, spremni za nastavak igre s trenutnim kartama (\textit{'stand'}), djelitelj igračima otkriva vrijednost svoje druge karte. Djelitelj izvlači nove karte sve dok je zbroj vrijednosti karata u njegovoj ruci manji od dvadeset jedan. Ako je zbroj karata u djeliteljevoj ruci veći od dvadeset jedan (\textit{'bust'}), svaki od igrača koji su još u igri osvaja iznos dvostruko veći od njihovog uloga. Inače, samo igrači koji su nastavili igrati te čiji je zbroj vrijednosti karata u ruci veći od zbroja vrijednosti karata u djeliteljevoj ruci osvajaju iznos dvostruko veći od uloga, dok svi preostali igrači gube svoj\break ulog. 
+Nakon što su svi igrači, osim onih koji su ostvarili \textit{'blackjack'} ili \textit{'bust'}, spremni za nastavak igre s trenutnim kartama (\textit{'stand'}), djelitelj igračima otkriva vrijednost svoje druge karte. Djelitelj izvlači nove karte sve dok je zbroj vrijednosti karata u njegovoj ruci manji od sedamnaest. Ako je zbroj karata u djeliteljevoj ruci veći od dvadeset jedan (\textit{'bust'}), svaki od igrača koji su još u igri osvaja iznos dvostruko veći od njihovog uloga. Inače, samo igrači koji su nastavili igrati te čiji je zbroj vrijednosti karata u ruci veći od zbroja vrijednosti karata u djeliteljevoj ruci osvajaju iznos dvostruko veći od uloga, dok svi preostali igrači gube svoj\break ulog. 
 
 Time je završena igra. Nova igra započinje postavljanjem uloga od strane igrača. Pošto djelitelj predstavlja kuću (kockarnicu), on ne stavlja ulog. Djelitelj je na dobitku ako igrači\break gube.
 
@@ -154,7 +154,7 @@ Time je završena igra. Nova igra započinje postavljanjem uloga od strane igra�
 
 \subsection{Tijek igre blackjack}
 
-U pravilima igre Blackjack pojavljuju se uloge djelitelja i igrača. Obije uloge bit će implementirane u zasebnim modulima. Raspodjelom funkcionalnosti u odvojene module omogućit ćemo bolju čitljivost koda, skalabilnost te olakšati ponovnu upotrebu komponenata\break igre. Dijagram tijeka igre Blackjack prikazan je na \textit{slici 1}.
+U pravilima igre Blackjack pojavljuju se uloge djelitelja i igrača. Obje uloge bit će implementirane u zasebnim modulima. Raspodjelom funkcionalnosti u odvojene module omogućit ćemo bolju čitljivost koda, skalabilnost te olakšati ponovnu upotrebu komponenata\break igre. Dijagram tijeka igre Blackjack prikazan je na \textit{slici 1}.
 
 % Then, where you want your figure:
 \begin{figure}[H]
@@ -252,7 +252,7 @@ Iako je uvjet visoke dostupnosti vrlo važan, nije jedini potreban za programsku
 
 \subsection{Komunikacija između modula}
 
-Za komunikaciju djelitelja i igrača korištene su procedure za obradu zahtjeva \textit{'call'} (omogućuje \textbf{sinkronu} komunikaciju) i \textit{'cast'} (omogućuje \textbf{asinkronu} komunikaciju). Obije procedure služe za poziv funkcija ili obradu zahtjeva unutar istog modula (na primjer, kada poslužitelj šalje zahtjev koji se obrađuje unutar istog poslužitelja, ili analogno za klijenta) te između različitih, međusobno povezanih, modula (na primjer, kada funkcija s klijenta poziva funkciju na poslužitelju, ili obrnuto). Prilikom korištenja \textit{sinkrone} komunikacije, program unutar modula nastavlja s izvršavanjem nakon završetka obrade zahtjeva ili izvođenja funkcije. Nasuprot tome, kod \textit{asinkrone} komunikacije program odmah nastavlja s izvršavanjem, ne čekajući završetak\break obrade.
+Za komunikaciju djelitelja i igrača korištene su procedure za obradu zahtjeva \textit{'call'} (omogućuje \textbf{sinkronu} komunikaciju) i \textit{'cast'} (omogućuje \textbf{asinkronu} komunikaciju). Obje procedure služe za poziv funkcija ili obradu zahtjeva unutar istog modula (na primjer, kada poslužitelj šalje zahtjev koji se obrađuje unutar istog poslužitelja, ili analogno za klijenta) te između različitih, međusobno povezanih, modula (na primjer, kada funkcija s klijenta poziva funkciju na poslužitelju, ili obrnuto). Prilikom korištenja \textit{sinkrone} komunikacije, program unutar modula nastavlja s izvršavanjem nakon završetka obrade zahtjeva ili izvođenja funkcije. Nasuprot tome, kod \textit{asinkrone} komunikacije program odmah nastavlja s izvršavanjem, ne čekajući završetak\break obrade.
 
 \subsection{Zaštita od višestrukog pristupa}
 
@@ -271,7 +271,7 @@ Implementacijom ponašanja navedenih u poglavlju \hyperref[sec:djelitelj]{\texti
 
 \subsection{Simulacija igre Blackjack}
 
-Na samome kraju, prije zaključka, proveli smo nekoliko simulacija igre Blackjack s različitim ishodima. Budući da je djelitelj automatiziran, na konzoli djelitelja nije bilo ispisa. Sve djeliteljeve poruke bile poslane igračima te prikazane na njihovim korisničkim sučeljima, stoga su na slikama prikazane korisničke konzole.
+Na samome kraju, prije zaključka, proveli smo nekoliko simulacija igre Blackjack s različitim ishodima. Budući da je djelitelj automatiziran, na konzoli djelitelja nije bilo ispisa. Sve djeliteljeve poruke su poslane igračima te prikazane na njihovim korisničkim sučeljima, stoga su na slikama prikazane korisničke konzole.
 
 \subsection{Povezivanje igrača s djeliteljem}
 
